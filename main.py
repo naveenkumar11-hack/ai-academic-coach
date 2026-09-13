@@ -7,7 +7,7 @@ import google.generativeai as genai
 
 app = FastAPI(title="AI Academic & Career Coach Backend")
 
-# Streamlit frontend connect aaga CORS Middleware
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -28,7 +28,7 @@ class InterviewRequest(BaseModel):
     user_answer: Optional[str] = ""
     question: Optional[str] = ""
 
-# Gemini 2.5 Flash Model Integration Function
+# Gemini 3.6 Flash Integration
 def get_gemini_response(prompt: str) -> str:
     current_key = os.getenv("GEMINI_API_KEY")
     if not current_key:
@@ -38,8 +38,7 @@ def get_gemini_response(prompt: str) -> str:
         )
     try:
         genai.configure(api_key=current_key)
-        # Unga account-il active-aaga irukkum Gemini 2.5 Flash model:
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-3.6-flash")
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
@@ -49,7 +48,7 @@ def get_gemini_response(prompt: str) -> str:
 def home():
     return {"status": "AI Academic Coach Backend is active and running!"}
 
-# Semester Exam Prep Endpoints (All route aliases included to prevent 404)
+# Semester Exam Prep Endpoints
 @app.post("/api/exam/generate-answer")
 @app.post("/api/exam-prep")
 @app.post("/generate-exam-answer")
