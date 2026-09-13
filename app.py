@@ -1,125 +1,126 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="AI Career & Semester Coach", layout="wide")
+st.set_page_config(
+    page_title="AI Academic & GenAI Career Coach",
+    page_icon="🎓",
+    layout="wide"
+)
+
+# Local FastAPI Backend URL
+BACKEND_URL = "http://127.0.0.1:8000"
 
 st.title("🎓 AI Academic & GenAI Career Coach")
 st.caption("Anna University 3rd Sem CSE (AI & ML) Prep & AI Engineering Mock Interview")
 
-BACKEND_URL = "http://127.0.0.1:8000"
-
 tab1, tab2 = st.tabs(["📚 Semester Exam Prep", "💼 GenAI Mock Interview (Text & Voice)"])
 
-# -------------------------------------------------------------
-# TAB 1: SEMESTER EXAM PREP
-# -------------------------------------------------------------
+# ----------------- Tab 1: Semester Exam Prep -----------------
 with tab1:
     st.subheader("Prepare 1-Mark, 2-Mark & 12-Mark Answers")
-    col1, col2 = st.columns(2)
-    
+
+    col1, col2 = st.columns([2, 1])
+
     with col1:
         subject = st.selectbox(
             "Select Subject:",
             [
                 "CS25C08 - Data Structures",
-                "CS25C11 - Operating Systems",
-                "CS25C09 - Java Programming",
-                "MA25C08 - Discrete Mathematics",
-                "CS25C10 - Object Oriented Software Engineering"
+                "CS25C09 - Object Oriented Programming",
+                "MA25C01 - Discrete Mathematics",
+                "CS25C10 - Digital Principles and System Design",
+                "AI25C01 - Foundations of Machine Learning"
             ]
         )
-        subject_code = subject.split(" - ")[0]
-        
+
     with col2:
-        question_type = st.radio(
-            "Mark Format:", 
-            ["1-mark", "2-mark", "12-mark"], 
-            index=2, 
+        mark_format = st.radio(
+            "Mark Format:",
+            ["1-mark", "2-mark", "12-mark"],
+            index=2,
             horizontal=True
         )
-        
-    topic = st.text_input("Enter Topic Name:", value="Collision Resolution using Quadratic Probing and Double Hashing")
-    
+
+    topic = st.text_input(
+        "Enter Topic Name:",
+        value="Collision Resolution using Quadratic Probing and Double Hashing"
+    )
+
     if st.button("Generate Exam Answer", type="primary"):
-        with st.spinner(f"Drafting university-standard {question_type} answer for {topic}..."):
-            try:
-                payload = {
-                    "subject_code": subject_code,
-                    "topic": topic,
-                    "question_type": question_type
-                }
-                res = requests.post(f"{BACKEND_URL}/api/exam/generate-answer", json=payload)
-                if res.status_code == 200:
-                    data = res.json()
-                    st.success("Answer Generated Successfully!")
-                    st.markdown(data["answer"])
-                else:
-                    st.error(f"Backend Error: {res.text}")
-            except Exception as e:
-                st.error(f"Failed to connect to backend: {e}. Make sure uvicorn backend is running!")
-
-# -------------------------------------------------------------
-# TAB 2: MOCK INTERVIEW EVALUATOR (TEXT & AUDIO)
-# -------------------------------------------------------------
-with tab2:
-    st.subheader("AI Technical & Communication Interview Grader")
-    
-    sub_for_interview = st.selectbox(
-        "Subject for Interview Question:",
-        [
-            "CS25C08 - Data Structures",
-            "CS25C11 - Operating Systems",
-            "CS25C09 - Java Programming",
-            "MA25C08 - Discrete Mathematics",
-            "CS25C10 - Object Oriented Software Engineering"
-        ]
-    )
-    sub_code_interview = sub_for_interview.split(" - ")[0]
-    
-    interview_q = st.text_input(
-        "Interview Question:",
-        value="Explain how Banker's Safety Algorithm avoids deadlocks in an OS."
-    )
-    
-    input_mode = st.radio("Choose Input Mode:", ["Text Input", "Voice Microphone"], horizontal=True)
-    
-    student_answer_text = ""
-    
-    if input_mode == "Text Input":
-        student_answer_text = st.text_area(
-            "Your Answer (Type your technical answer here):",
-            height=150,
-            placeholder="Explain clearly using technical terms..."
-        )
-    else:
-        st.write("🎙️ **Record Your Answer via Microphone:**")
-        audio_value = st.audio_input("Record voice")
-        if audio_value:
-            st.audio(audio_value)
-            st.info("Audio recorded! (Transcribing audio directly in browser...)")
-            student_answer_text = st.text_area(
-                "Verify or edit transcription of your answer:",
-                value="The Banker's safety algorithm uses Available, Max, Allocation, and Need matrices to find a safe execution sequence.",
-                height=100
-            )
-
-    if st.button("Submit Answer for Evaluation", type="primary"):
-        if not student_answer_text.strip():
-            st.warning("Please provide an answer (type or record audio) first!")
+        if not topic.strip():
+            st.warning("Please enter a topic name.")
         else:
-            with st.spinner("Hiring Manager is analyzing your technical accuracy and communication..."):
+            with st.spinner("Generating Anna University format answer..."):
+                payload = {
+                    "subject": subject,
+                    "mark_format": mark_format,
+                    "topic": topic
+                }
                 try:
-                    payload = {
-                        "subject_code": sub_code_interview,
-                        "question": interview_q,
-                        "student_answer": student_answer_text
-                    }
-                    res = requests.post(f"{BACKEND_URL}/api/career/evaluate-interview", json=payload)
-                    if res.status_code == 200:
-                        eval_data = res.json()
-                        st.success("Evaluation Complete!")
-                        st.markdown(eval_data["evaluation"])
+                    response = requests.post(
+                        f"{BACKEND_URL}/api/exam/generate-answer",
+                        json=payload,
+                        timeout=90
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        result_text = data.get("answer") or data.get("response") or data.get("result")
+                        st.success("Answer Generated Successfully!")
+                        st.markdown(result_text)
                     else:
-                        st.error(f"Backend Error: {res.text}")
+                        st.error(f"Backend Error: {response.text}")
+                except requests.exceptions.ConnectionError:
+                    st.error(
+                        "Failed to connect to backend! Make sure FastAPI uvicorn backend is running in the terminal."
+                    )
                 except Exception as e:
-                    st.error(f"Failed to connect to backend: {e}")
+                    st.error(f"Error: {str(e)}")
+
+# ------------- Tab 2: GenAI Mock Interview -------------
+with tab2:
+    st.subheader("AI Engineering Mock Interview")
+    role = st.selectbox(
+        "Target Role:",
+        ["GenAI Engineer", "Machine Learning Engineer", "Full Stack AI Developer"]
+    )
+
+    if st.button("Get Interview Question"):
+        with st.spinner("Fetching questions..."):
+            try:
+                res = requests.post(
+                    f"{BACKEND_URL}/api/interview",
+                    json={"role": role},
+                    timeout=60
+                )
+                if res.status_code == 200:
+                    st.session_state["current_question"] = res.json().get("feedback", "")
+                else:
+                    st.error(f"Error: {res.text}")
+            except Exception as e:
+                st.error(f"Backend error: {str(e)}")
+
+    if "current_question" in st.session_state:
+        st.info(st.session_state["current_question"])
+        user_reply = st.text_area("Type your technical response here:", height=150)
+
+        if st.button("Submit Answer for Evaluation"):
+            if not user_reply.strip():
+                st.warning("Please type your response before submitting.")
+            else:
+                with st.spinner("Evaluating response with AI panel..."):
+                    try:
+                        res = requests.post(
+                            f"{BACKEND_URL}/api/interview",
+                            json={
+                                "role": role,
+                                "question": st.session_state["current_question"],
+                                "user_answer": user_reply
+                            },
+                            timeout=90
+                        )
+                        if res.status_code == 200:
+                            st.markdown(res.json().get("feedback", ""))
+                        else:
+                            st.error(f"Error: {res.text}")
+                    except Exception as e:
+                        st.error(f"Backend error: {str(e)}")
